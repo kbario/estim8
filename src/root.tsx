@@ -26,6 +26,7 @@ export default component$(() => {
       </head>
       <body lang="en">
         <RouterOutlet />
+        <input type="checkbox" id="modal-toggle-1" class="modal-toggle" />
       </body>
     </QwikCityProvider>
   );

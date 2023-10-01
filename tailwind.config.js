@@ -6,6 +6,10 @@ module.exports = {
   },
   plugins: [require("daisyui")],
   theme: {
-    extend: {},
+    extend: {
+      minHeight: {
+        viewi: "calc(100svh - 120px)",
+      },
+    },
   },
 };
