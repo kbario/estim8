@@ -1,9 +1,9 @@
 import {
-    Signal,
-    component$,
-    useComputed$,
-    useSignal,
-    useStore,
+  Signal,
+  component$,
+  useComputed$,
+  useSignal,
+  useStore,
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 
@@ -24,6 +24,7 @@ type BasicProps = {
 };
 
 type MyStore = Array<Thing | EnclosedThing>;
+type CopyBtnProps = { store: MyStore, total: Signal<number> }
 
 const isEnclosedThing = (thing: any): thing is EnclosedThing =>
   Array.isArray(thing?.["data"]) && !thing?.["hours"];
@@ -33,6 +34,18 @@ const arst = (acc: number, idv: Thing | EnclosedThing) => {
     acc += idv.data.reduce(arst, 0);
   } else {
     acc += idv.enabled ? parseFloat(idv.hours) || 0 : 0;
+  }
+  return acc;
+};
+
+const getPlurality = (a: string) => a === '1' ? 'hr' : "hrs"
+
+const zxcd = (acc: string, idv: Thing | EnclosedThing) => {
+  if (isEnclosedThing(idv)) {
+    acc += `${idv.name}: \n`
+    acc += idv.data.reduce(zxcd, '');
+  } else {
+    acc += idv.enabled ? ` - ${idv.name}: ${idv.hours}${getPlurality(idv.hours)} \n` : '';
   }
   return acc;
 };
@@ -80,9 +93,12 @@ export default component$(() => {
           <Basic key={idx} data={x} />
         ),
       )}
-      <div class="sticky bottom-0 flex items-baseline gap-4 bg-base-100 py-4 font-bold">
-        <span class="">total</span>
-        <span class="text-2xl font-bold ">{total.value}</span>
+      <div class="sticky bottom-0 flex items-end bg-base-100 py-4 font-bold justify-between">
+        <div class=" flex gap-4 items-baseline">
+          <span class="">total</span>
+          <span class="text-2xl font-bold ">{total.value}</span>
+        </div>
+        <CopyButton store={store} total={total} />
       </div>
     </div>
   );
@@ -237,6 +253,13 @@ const TextInput = component$<{ val: Signal<string> }>((props) => {
     />
   );
 });
+
+const CopyButton = component$<CopyBtnProps>((props) => {
+  return <button class="btn" onClick$={() => {
+    const zxcv = props.store.reduce(zxcd, '') + `total: ${props.total.value}${getPlurality(props.total.value.toString())}`
+    navigator.clipboard.writeText(zxcv)
+  }}>Copy</button>
+})
 
 export const head: DocumentHead = {
   title: "estim8",
