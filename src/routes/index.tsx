@@ -7,7 +7,6 @@ import {
   useVisibleTask$,
 } from "@builder.io/qwik";
 import {
-  useLocation,
   type DocumentHead,
   useNavigate,
 } from "@builder.io/qwik-city";
@@ -91,7 +90,6 @@ function makeEnclosedThing(
 }
 
 export default component$(() => {
-  const loc = useLocation();
   const nav = useNavigate();
 
   const store = useStore<MyStore>([
