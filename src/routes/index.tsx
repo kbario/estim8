@@ -105,9 +105,9 @@ export default component$(() => {
     makeThing("Learning Time/Non-project", 1, 0),
   ]);
 
-  useVisibleTask$(async ({ track }) => {
-    track(() => loc)
-    const a = loc.url.searchParams.get(SEARCH_PARAM_NAME);
+  useVisibleTask$(async () => {
+    const loc = new URL(document.location.href)
+    const a = loc.searchParams.get(SEARCH_PARAM_NAME);
     console.log('runz',loc, a)
     if (!a) return;
     const b: MyStore = JSON.parse(decodeURIComponent(`${a}`));
