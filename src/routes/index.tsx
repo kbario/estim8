@@ -14,6 +14,13 @@ type Thing = {
   min: number;
 };
 
+type ThingS = {
+  name: string;
+  enabled: Signal<boolean>;
+  hours: Signal<string>;
+  min: number;
+};
+
 type EnclosedThing = {
   name: string;
   data: Thing[];
@@ -24,7 +31,13 @@ type BasicProps = {
 };
 
 type MyStore = Array<Thing | EnclosedThing>;
-type CopyBtnProps = { store: MyStore, total: Signal<number> }
+type CopyBtnProps = {
+  store: MyStore;
+  total: Signal<number>;
+  totalTotal: Signal<number>;
+  confidence: Signal<string>;
+  enabled: Signal<boolean>;
+};
 
 const isEnclosedThing = (thing: any): thing is EnclosedThing =>
   Array.isArray(thing?.["data"]) && !thing?.["hours"];
@@ -38,14 +51,16 @@ const arst = (acc: number, idv: Thing | EnclosedThing) => {
   return acc;
 };
 
-const getPlurality = (a: string) => a === '1' ? 'hr' : "hrs"
+const getPlurality = (a: string) => (a === "1" ? "hr" : "hrs");
 
-const zxcd = (acc: string, idv: Thing | EnclosedThing) => {
+const zxcd = (init: string) => (acc: string, idv: Thing | EnclosedThing) => {
   if (isEnclosedThing(idv)) {
-    acc += `${idv.name}: \n`
-    acc += idv.data.reduce(zxcd, '');
+    acc += `${init}- ${idv.name}: \n`;
+    acc += idv.data.reduce(zxcd(init + "  "), "");
   } else {
-    acc += idv.enabled ? ` - ${idv.name}: ${idv.hours}${getPlurality(idv.hours)} \n` : '';
+    acc += idv.enabled
+      ? `${init}- ${idv.name}: ${idv.hours}${getPlurality(idv.hours)} \n`
+      : "";
   }
   return acc;
 };
@@ -69,6 +84,9 @@ function makeEnclosedThing(
 }
 
 export default component$(() => {
+  const confidenceFactorS = useSignal<string>("1.1");
+  const confidenceFactorEnabledS = useSignal<boolean>(true);
+
   const store = useStore<MyStore>([
     makeThing("Communications & Meetings", 1),
     makeThing("Initial Setup", 1),
@@ -84,21 +102,51 @@ export default component$(() => {
     return store.reduce(arst, 0);
   });
 
+  const totalTotal = useComputed$(() => {
+    return confidenceFactorEnabledS.value
+      ? Math.ceil(store.reduce(arst, 0) * parseFloat(confidenceFactorS.value))
+      : store.reduce(arst, 0);
+  });
+
   return (
     <div class="flex min-h-viewi w-full flex-col gap-1 px-10 py-2">
       {store.map((x, idx) =>
         isEnclosedThing(x) ? (
-          <OuterBasic key={idx} thing={x} />
+          <OuterBasic key={`o-${idx}`} thing={x} />
         ) : (
-          <Basic key={idx} data={x} />
+          <Basic data={x} />
         ),
       )}
-      <div class="sticky bottom-0 flex items-end bg-base-100 py-4 font-bold justify-between">
-        <div class=" flex gap-4 items-baseline">
+      <div class="p-2"></div>
+      <BasicSignal
+        data={{
+          name: "Confidence Level",
+          hours: confidenceFactorS,
+          enabled: confidenceFactorEnabledS,
+          min: 1,
+        }}
+      />
+      <div class="sticky bottom-0 flex items-center justify-between bg-base-100 py-4">
+        <div class=" flex flex-col">
           <span class="">total</span>
-          <span class="text-2xl font-bold ">{total.value}</span>
+          <span class="text-2xl">
+            {confidenceFactorEnabledS.value && (
+              <span>
+                {total.value} * {confidenceFactorS.value} ={" "}
+              </span>
+            )}
+            <span class="text-2xl font-bold ">
+              {totalTotal.value} {getPlurality(totalTotal.value.toString())}
+            </span>
+          </span>
         </div>
-        <CopyButton store={store} total={total} />
+        <CopyButton
+          store={store}
+          totalTotal={totalTotal}
+          total={total}
+          confidence={confidenceFactorS}
+          enabled={confidenceFactorEnabledS}
+        />
       </div>
     </div>
   );
@@ -128,6 +176,34 @@ const XBtn = component$<{ thing: EnclosedThing; id: number }>((props) => {
   );
 });
 
+const enterFn =
+  (
+    name: Signal<string>,
+    hours: Signal<string>,
+    thing: EnclosedThing,
+    dialogRef: Signal<HTMLDialogElement | undefined>,
+  ) =>
+  (event: KeyboardEvent) => {
+    if (event.isComposing || !(event.keyCode === 13)) {
+      return;
+    }
+    fn(name, hours, thing, dialogRef);
+  };
+
+const fn = (
+  name: Signal<string>,
+  hours: Signal<string>,
+  thing: EnclosedThing,
+  dialogRef: Signal<HTMLDialogElement | undefined>,
+) => {
+  if (!name.value || !hours.value) return;
+  thing.data.push(makeThing(name.value, parseFloat(hours.value)));
+  console.log("asdf");
+  name.value = "";
+  hours.value = "1";
+  dialogRef.value?.close();
+};
+
 const OuterBasic = component$<{ thing: EnclosedThing }>((props) => {
   const dialogRef = useSignal<HTMLDialogElement>();
   const name = useSignal("");
@@ -137,7 +213,7 @@ const OuterBasic = component$<{ thing: EnclosedThing }>((props) => {
       {props.thing.name}
       <ul class="flex flex-col gap-1">
         {props.thing.data.map((y, id) => (
-          <li class="flex w-full items-center gap-1" key={id}>
+          <li class="flex w-full items-center gap-1" key={`i-${id}`}>
             <Basic data={y} />
             <XBtn thing={props.thing} id={id} />
           </li>
@@ -147,6 +223,10 @@ const OuterBasic = component$<{ thing: EnclosedThing }>((props) => {
         class="btn self-start"
         onClick$={() => {
           dialogRef.value?.showModal();
+          addEventListener(
+            "keyup",
+            enterFn(name, hours, props.thing, dialogRef),
+          );
         }}
       >
         Add
@@ -168,13 +248,11 @@ const OuterBasic = component$<{ thing: EnclosedThing }>((props) => {
             <button
               class="btn btn-primary"
               onClick$={() => {
-                if (!name.value || !hours.value) return;
-                props.thing.data.push(
-                  makeThing(name.value, parseFloat(hours.value)),
+                fn(name, hours, props.thing, dialogRef);
+                removeEventListener(
+                  "keyup",
+                  enterFn(name, hours, props.thing, dialogRef),
                 );
-                name.value = "";
-                hours.value = "1";
-                dialogRef.value?.close();
               }}
             >
               Add
@@ -196,6 +274,32 @@ const Basic = component$<BasicProps>((props) => {
         <NumberInput data={props.data} />
       </div>
     </div>
+  );
+});
+
+const BasicSignal = component$<{ data: ThingS }>((props) => {
+  return (
+    <div class="flex w-full flex-wrap items-center gap-x-4">
+      <div class="form-control min-w-[150px] grow">
+        <CheckBoxSignal data={props.data} />
+      </div>
+      <div class="form-control w-fit">
+        <NumberInputSignal val={props.data.hours} />
+      </div>
+    </div>
+  );
+});
+
+const CheckBoxSignal = component$<{ data: ThingS }>((props) => {
+  return (
+    <label class="label w-full min-w-[48px] cursor-pointer justify-start gap-x-4">
+      <input
+        type="checkbox"
+        class="checkbox"
+        bind: checked={props.data.enabled}
+      />
+      <span class="label-text w-full max-w-xs">{props.data.name}</span>
+    </label>
   );
 });
 
@@ -255,11 +359,26 @@ const TextInput = component$<{ val: Signal<string> }>((props) => {
 });
 
 const CopyButton = component$<CopyBtnProps>((props) => {
-  return <button class="btn" onClick$={() => {
-    const zxcv = props.store.reduce(zxcd, '') + `total: ${props.total.value}${getPlurality(props.total.value.toString())}`
-    navigator.clipboard.writeText(zxcv)
-  }}>Copy</button>
-})
+  return (
+    <button
+      class="btn"
+      onClick$={() => {
+        const qwer = props.enabled.value
+          ? `\ntotal: ${props.total.value} * ${props.confidence.value} = ${
+              props.totalTotal.value
+            }${getPlurality(props.totalTotal.value.toString())}`.toString()
+          : `\ntotal: ${props.total.value}${getPlurality(
+              props.total.value.toString(),
+            )}`.toString();
+        const zxcv = props.store.reduce(zxcd(""), "") + qwer;
+        navigator.clipboard.writeText(zxcv);
+      }}
+    >
+      {" "}
+      Copy
+    </button>
+  );
+});
 
 export const head: DocumentHead = {
   title: "estim8",
