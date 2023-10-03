@@ -109,7 +109,7 @@ export default component$(() => {
   });
 
   return (
-    <div class="flex min-h-viewi w-full flex-col gap-1 px-10 py-2">
+    <div class="flex min-h-viewi w-full max-w-[800px]  flex-col justify-center gap-1 px-10 py-2">
       {store.map((x, idx) =>
         isEnclosedThing(x) ? (
           <OuterBasic key={`o-${idx}`} thing={x} />

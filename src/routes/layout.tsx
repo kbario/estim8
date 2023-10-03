@@ -26,7 +26,7 @@ export default component$(() => {
   return (
     <>
       <Header />
-      <main>
+      <main class="flex w-full justify-center">
         <Slot />
       </main>
       <Footer />
