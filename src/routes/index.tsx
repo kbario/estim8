@@ -4,8 +4,13 @@ import {
   useComputed$,
   useSignal,
   useStore,
+  useVisibleTask$,
 } from "@builder.io/qwik";
-import type { DocumentHead } from "@builder.io/qwik-city";
+import {
+  useLocation,
+  type DocumentHead,
+  useNavigate,
+} from "@builder.io/qwik-city";
 
 type Thing = {
   name: string;
@@ -38,6 +43,8 @@ type CopyBtnProps = {
   confidence: Signal<string>;
   enabled: Signal<boolean>;
 };
+
+const SEARCH_PARAM_NAME = "D";
 
 const isEnclosedThing = (thing: any): thing is EnclosedThing =>
   Array.isArray(thing?.["data"]) && !thing?.["hours"];
@@ -84,26 +91,48 @@ function makeEnclosedThing(
 }
 
 export default component$(() => {
-  const confidenceFactorS = useSignal<string>("1.1");
-  const confidenceFactorEnabledS = useSignal<boolean>(true);
+  const loc = useLocation();
+  const nav = useNavigate();
 
   const store = useStore<MyStore>([
     makeThing("Communications & Meetings", 1),
     makeThing("Initial Setup", 1),
     makeEnclosedThing("Dev Work", { name: "asdf", hours: 2 }),
     makeThing("Revisions/bug-fixing", 2),
-    makeThing("Unit Tests", 4),
+    makeThing("Writing Tests", 4),
     makeThing("Manual Testing", 1),
     makeThing("Merging & Deployments", 0.5),
     makeThing("Learning Time/Non-project", 1, 0),
   ]);
+
+  useVisibleTask$(async () => {
+    const a = loc.url.searchParams.get(SEARCH_PARAM_NAME);
+    if (!a) return;
+    const b: MyStore = JSON.parse(decodeURIComponent(`${a}`));
+    b.forEach((v) => {
+      const d = store.find((x) => x.name === v.name);
+      if (isEnclosedThing(d)) {
+        //@ts-ignore
+        d.data = v.data;
+      } else {
+        //@ts-ignore
+        d.hours = v.hours;
+        //@ts-ignore
+        d.enabled = v.enabled;
+      }
+    });
+    await nav("/");
+  });
+
+  const confidenceFactorS = useSignal<string>("1.1");
+  const confidenceFactorEnabledS = useSignal<boolean>(true);
 
   const total = useComputed$(() => {
     return store.reduce(arst, 0);
   });
 
   const totalTotal = useComputed$(() => {
-    return confidenceFactorEnabledS.value
+    return confidenceFactorEnabledS.value && confidenceFactorS.value
       ? Math.ceil(store.reduce(arst, 0) * parseFloat(confidenceFactorS.value))
       : store.reduce(arst, 0);
   });
@@ -114,7 +143,7 @@ export default component$(() => {
         isEnclosedThing(x) ? (
           <OuterBasic key={`o-${idx}`} thing={x} />
         ) : (
-          <Basic data={x} />
+          <Basic key={`a-${idx}`} data={x} />
         ),
       )}
       <div class="p-2"></div>
@@ -130,7 +159,7 @@ export default component$(() => {
         <div class=" flex flex-col">
           <span class="">total</span>
           <span class="text-2xl">
-            {confidenceFactorEnabledS.value && (
+            {confidenceFactorEnabledS.value && confidenceFactorS.value && (
               <span>
                 {total.value} * {confidenceFactorS.value} ={" "}
               </span>
@@ -198,7 +227,6 @@ const fn = (
 ) => {
   if (!name.value || !hours.value) return;
   thing.data.push(makeThing(name.value, parseFloat(hours.value)));
-  console.log("asdf");
   name.value = "";
   hours.value = "1";
   dialogRef.value?.close();
@@ -236,7 +264,7 @@ const OuterBasic = component$<{ thing: EnclosedThing }>((props) => {
           <h3 class="text-lg font-bold">Add to {props.thing.name}</h3>
           <div class="mt-6 flex flex-wrap items-center gap-2">
             <TextInput val={name} />
-            <NumberInputSignal val={hours} />
+            <NumberInputSignal val={hours} increment={1} />
           </div>
           <div class="modal-action">
             <button
@@ -284,7 +312,7 @@ const BasicSignal = component$<{ data: ThingS }>((props) => {
         <CheckBoxSignal data={props.data} />
       </div>
       <div class="form-control w-fit">
-        <NumberInputSignal val={props.data.hours} />
+        <NumberInputSignal val={props.data.hours} increment={0.1} />
       </div>
     </div>
   );
@@ -333,13 +361,17 @@ const NumberInput = component$<BasicProps>((props) => {
   );
 });
 
-const NumberInputSignal = component$<{ val: Signal<string> }>((props) => {
+const NumberInputSignal = component$<{
+  val: Signal<string>;
+  increment: number;
+}>((props) => {
   return (
     <input
       type="number"
       inputMode="numeric"
       pattern="[0-9]*"
       min={1}
+      step={props.increment}
       placeholder="number of hours"
       class="input input-bordered input-primary w-28  max-w-xs"
       bind: value={props.val}
@@ -363,14 +395,18 @@ const CopyButton = component$<CopyBtnProps>((props) => {
     <button
       class="btn"
       onClick$={() => {
-        const qwer = props.enabled.value
-          ? `\ntotal: ${props.total.value} * ${props.confidence.value} = ${
-              props.totalTotal.value
-            }${getPlurality(props.totalTotal.value.toString())}`.toString()
-          : `\ntotal: ${props.total.value}${getPlurality(
-              props.total.value.toString(),
-            )}`.toString();
-        const zxcv = props.store.reduce(zxcd(""), "") + qwer;
+        const qwer =
+          props.enabled.value && props.confidence.value
+            ? `\ntotal: ${props.total.value} * ${props.confidence.value} = ${
+                props.totalTotal.value
+              }${getPlurality(props.totalTotal.value.toString())}`.toString()
+            : `\ntotal: ${props.total.value}${getPlurality(
+                props.total.value.toString(),
+              )}`.toString();
+        const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
+          JSON.stringify(props.store),
+        )})`;
+        const zxcv = props.store.reduce(zxcd(""), "") + qwer + jkl;
         navigator.clipboard.writeText(zxcv);
       }}
     >
