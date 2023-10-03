@@ -397,12 +397,12 @@ const CopyButton = component$<CopyBtnProps>((props) => {
       onClick$={() => {
         const qwer =
           props.enabled.value && props.confidence.value
-            ? `\ntotal: ${props.total.value} * ${props.confidence.value} = ${
+            ? `\ntotal: ${props.total.value} * ${props.confidence.value} = **${
                 props.totalTotal.value
-              }${getPlurality(props.totalTotal.value.toString())}`.toString()
-            : `\ntotal: ${props.total.value}${getPlurality(
+              }${getPlurality(props.totalTotal.value.toString())}**`.toString()
+            : `\ntotal: **${props.total.value}${getPlurality(
                 props.total.value.toString(),
-              )}`.toString();
+              )}**`.toString();
         const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
           JSON.stringify(props.store),
         )})`;
