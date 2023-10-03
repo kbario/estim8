@@ -109,6 +109,7 @@ export default component$(() => {
     const a = loc.url.searchParams.get(SEARCH_PARAM_NAME);
     if (!a) return;
     const b: MyStore = JSON.parse(decodeURIComponent(`${a}`));
+    console.log(b)
     b.forEach((v) => {
       const d = store.find((x) => x.name === v.name);
       if (isEnclosedThing(d)) {
