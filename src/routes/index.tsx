@@ -82,11 +82,11 @@ function makeThing(name: string, hours: number, min: number = 1) {
 }
 function makeEnclosedThing(
   name: string,
-  data: { name: string; hours: number; min?: number },
+  data?: { name: string; hours: number; min?: number },
 ) {
   return {
     name,
-    data: [makeThing(data.name, data.hours, data.min || 1)],
+    data: data?.name ? [makeThing(data.name, data.hours, data.min || 1)] : [],
   };
 }
 
@@ -97,7 +97,7 @@ export default component$(() => {
   const store = useStore<MyStore>([
     makeThing("Communications & Meetings", 1),
     makeThing("Initial Setup", 1),
-    makeEnclosedThing("Dev Work", { name: "asdf", hours: 2 }),
+    makeEnclosedThing("Dev Work"),
     makeThing("Revisions/bug-fixing", 2),
     makeThing("Writing Tests", 4),
     makeThing("Manual Testing", 1),
