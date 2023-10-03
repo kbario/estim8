@@ -123,7 +123,7 @@ export default component$(() => {
       }
     });
     await nav("/");
-  });
+  }, { strategy: 'document-idle' });
 
   const confidenceFactorS = useSignal<string>("1.1");
   const confidenceFactorEnabledS = useSignal<boolean>(true);
