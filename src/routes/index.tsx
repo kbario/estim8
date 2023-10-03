@@ -106,10 +106,12 @@ export default component$(() => {
   ]);
 
   useVisibleTask$(async ({ track }) => {
-    track(() => loc.url)
+    track(() => loc)
     const a = loc.url.searchParams.get(SEARCH_PARAM_NAME);
+    console.log('runz',loc, a)
     if (!a) return;
     const b: MyStore = JSON.parse(decodeURIComponent(`${a}`));
+    console.log(b)
     b.forEach((v) => {
       const d = store.find((x) => x.name === v.name);
       if (isEnclosedThing(d)) {
