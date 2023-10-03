@@ -105,9 +105,9 @@ export default component$(() => {
     makeThing("Learning Time/Non-project", 1, 0),
   ]);
 
-  useVisibleTask$(async () => {
+  useVisibleTask$(async ({ track }) => {
+    track(() => loc.url)
     const a = loc.url.searchParams.get(SEARCH_PARAM_NAME);
-    console.log('runz')
     if (!a) return;
     const b: MyStore = JSON.parse(decodeURIComponent(`${a}`));
     b.forEach((v) => {
@@ -123,7 +123,7 @@ export default component$(() => {
       }
     });
     await nav("/");
-  }, { strategy: 'document-idle' });
+  });
 
   const confidenceFactorS = useSignal<string>("1.1");
   const confidenceFactorEnabledS = useSignal<boolean>(true);
@@ -213,12 +213,12 @@ const enterFn =
     thing: EnclosedThing,
     dialogRef: Signal<HTMLDialogElement | undefined>,
   ) =>
-  (event: KeyboardEvent) => {
-    if (event.isComposing || !(event.keyCode === 13)) {
-      return;
-    }
-    fn(name, hours, thing, dialogRef);
-  };
+    (event: KeyboardEvent) => {
+      if (event.isComposing || !(event.keyCode === 13)) {
+        return;
+      }
+      fn(name, hours, thing, dialogRef);
+    };
 
 const fn = (
   name: Signal<string>,
@@ -398,12 +398,11 @@ const CopyButton = component$<CopyBtnProps>((props) => {
       onClick$={() => {
         const qwer =
           props.enabled.value && props.confidence.value
-            ? `\ntotal: ${props.total.value} * ${props.confidence.value} = **${
-                props.totalTotal.value
+            ? `\ntotal: ${props.total.value} * ${props.confidence.value} = **${props.totalTotal.value
               }${getPlurality(props.totalTotal.value.toString())}**`.toString()
             : `\ntotal: **${props.total.value}${getPlurality(
-                props.total.value.toString(),
-              )}**`.toString();
+              props.total.value.toString(),
+            )}**`.toString();
         const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
           JSON.stringify(props.store),
         )})`;
